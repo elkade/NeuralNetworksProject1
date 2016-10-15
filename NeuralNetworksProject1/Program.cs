@@ -10,16 +10,16 @@ using Encog.Neural.Networks;
 using Encog.Neural.Networks.Training.Propagation.Back;
 using Encog.ML.Train;
 using System.Text;
-using System.Threading;
 using System.IO;
 using System.Globalization;
+using Encog.Neural.Networks.Training.Propagation.Resilient;
 
 namespace NeuralNetworksProject1
 {
     class Program
     {
-        static double _scale;
-        static double _transition;
+        private static NormalizationHelper _normalizer;
+
         static void Main(string[] args)
         {
             //DoClassification();
@@ -71,13 +71,13 @@ namespace NeuralNetworksProject1
 
                 IMLData output = network.Compute(row.Input);
 
-                var result = Denormalize(output[0]);
+                var result = _normalizer.Denormalize(output[0]);
 
                 StringBuilder rowBuilder = new StringBuilder();
 
                 for (int i = 0; i < row.Input.Count; i++)
                 {
-                    rowBuilder.Append(Denormalize(row.Input[i]).ToString(CultureInfo.GetCultureInfo("en-GB")));
+                    rowBuilder.Append(_normalizer.Denormalize(row.Input[i]).ToString(CultureInfo.GetCultureInfo("en-GB")));
                     rowBuilder.Append(",");
                 }
                 rowBuilder.Append(result.ToString(CultureInfo.GetCultureInfo("en-GB")));
@@ -96,7 +96,8 @@ namespace NeuralNetworksProject1
             data = GetData(csv, rowLength).ToArray();
             csv.Close();
 
-            data = Normalize(data);
+            data = data.Select(d1 => d1.Select(d2 => _normalizer.Normalize(d2)).ToArray()).ToArray();
+
             return new BasicMLDataSet(data, data.Select(d=>new double[0]).ToArray()) ;
         }
 
@@ -108,14 +109,14 @@ namespace NeuralNetworksProject1
 
                 IMLData output = network.Compute(row.Input);
 
-                var result = Denormalize(output[0]);
+                var result = _normalizer.Denormalize(output[0]);
 
                 sb.Append(" -> predicted: ");
                 sb.Append(result);
 
                 if (row.Ideal.Count > 0)
                 {
-                    var correct = Denormalize(row.Ideal[0]);
+                    var correct = _normalizer.Denormalize(row.Ideal[0]);
                     sb.Append("(correct: ");
                     sb.Append(correct);
                     sb.Append(")");
@@ -141,8 +142,8 @@ namespace NeuralNetworksProject1
         {
             var network = new BasicNetwork();
             network.AddLayer(new BasicLayer(null, true, inputSize));
-            network.AddLayer(new BasicLayer(new ActivationSigmoid(), true, 10));
-            network.AddLayer(new BasicLayer(new ActivationElliott(), true, 20));
+            network.AddLayer(new BasicLayer(new ActivationSigmoid(), true, 30));
+            network.AddLayer(new BasicLayer(new ActivationSigmoid(), false, 20));
             network.AddLayer(new BasicLayer(new ActivationSigmoid(), true, 1));
             network.Structure.FinalizeStructure();
             network.Reset();
@@ -170,27 +171,14 @@ namespace NeuralNetworksProject1
             data = GetData(csv, rowLength).ToArray();
             csv.Close();
 
-            data = Normalize(data);
+            _normalizer = new NormalizationHelper(data);
+
+            data = data.Select(d1 => d1.Select(d2 => _normalizer.Normalize(d2)).ToArray()).ToArray();
 
             double[][] input = data.Select(d => d.Take(rowLength - 1).ToArray()).ToArray();
             double[][] output = data.Select(d => d.Skip(rowLength - 1).ToArray()).ToArray();
 
             return new BasicMLDataSet(input, output);
-        }
-
-        private static double[][] Normalize(double[][] data)
-        {
-            double max = data.Select(d => d.Max()).Max();
-            double min = data.Select(d => d.Min()).Min();
-
-            _scale = max - min;
-            _transition = min;
-            return data.Select(d1 => d1.Select(d2 => (d2 - _transition) / _scale).ToArray()).ToArray();
-        }
-
-        private static double Denormalize(double value)
-        {
-            return value * _scale + _transition;
         }
     }
 }
