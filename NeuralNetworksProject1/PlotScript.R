@@ -4,12 +4,12 @@ args = commandArgs(trailingOnly = TRUE)
 if (length(args) == 0) {
 	stop("At least one argument must be supplied (input file).n", call. = FALSE)
 }
-path <- args[1]
+output_path <- args[1]
+input_path <- args[2]
 
-MyData <- read.csv(file = path, header = TRUE, sep = ",")
+output <- read.csv(file = output_path, header = FALSE, sep = ",")
+input <- read.csv(file = input_path, header = TRUE, sep = ",")
 
-#jpeg('rplot.jpg')
+plot(input, type = "p", col = "black", cex = .2)
 
-plot(MyData)
-
-#dev.off()
+points(output, col = "red", cex = .2)

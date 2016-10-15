@@ -1,12 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace ConsoleApplication9
+namespace NeuralNetworksProject1
 {
     /// <summary>
     /// This class runs R code from a file using the console.
@@ -25,7 +21,7 @@ namespace ConsoleApplication9
         /// <param name="rScriptExecutablePath">Usually only requires "rscript.exe"</param>
         /// <param name="args">Multiple R args can be seperated by spaces.</param>
         /// <returns>Returns a string with the R responses.</returns>
-        public static string RunFromCmd(string rCodeFilePath, string rScriptExecutablePath, string args)
+        public static string RunFromCmd(string rCodeFilePath, string rScriptExecutablePath, params string[] args)
         {
             string file = rCodeFilePath;
             string result = string.Empty;
@@ -36,7 +32,7 @@ namespace ConsoleApplication9
                 var info = new ProcessStartInfo();
                 info.FileName = rScriptExecutablePath;
                 info.WorkingDirectory = Path.GetDirectoryName(rScriptExecutablePath);
-                info.Arguments = rCodeFilePath + " " + args;
+                info.Arguments = rCodeFilePath + " " + string.Join(" ", args);
 
                 info.RedirectStandardInput = false;
                 info.RedirectStandardOutput = true;
