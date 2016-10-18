@@ -65,7 +65,8 @@ namespace NeuralNetworksProject1
         }
         private static void VisualizeClassification(IMLDataSet normalizedData, BasicNetwork network, string outputPath, string inputPath)
         {
-            var csv = new StringBuilder("x,y,cls");
+            var csv = new StringBuilder();
+            csv.AppendLine("x,y,cls");
             foreach (var row in normalizedData)
             {
                 var sb = new StringBuilder();
@@ -73,7 +74,8 @@ namespace NeuralNetworksProject1
                 IMLData output = network.Compute(row.Input);
 
                 var result = Math.Round(_normalizer.Denormalize(output[0]));
-
+                if (result < 1) result = 1;
+                else if (result > 3) result = 3;
                 StringBuilder rowBuilder = new StringBuilder();
 
                 for (int i = 0; i < row.Input.Count; i++)
@@ -159,7 +161,7 @@ namespace NeuralNetworksProject1
                 training.Iteration();
                 Console.WriteLine(@"Epoch #" + epoch + @" Error:" + training.Error);
                 epoch++;
-            } while (training.Error > 0.017);
+            } while (training.Error > 0.018);
 
             training.FinishTraining();
         }
@@ -168,9 +170,8 @@ namespace NeuralNetworksProject1
         {
             var network = new BasicNetwork();
             network.AddLayer(new BasicLayer(null, true, inputSize));
-            network.AddLayer(new BasicLayer(new ActivationSigmoid(), true, 10));
-            network.AddLayer(new BasicLayer(new ActivationSigmoid(), true, 6));
-            network.AddLayer(new BasicLayer(new ActivationSigmoid(), true, 1));
+            network.AddLayer(new BasicLayer(new ActivationTANH(), true, 6));
+            network.AddLayer(new BasicLayer(new ActivationTANH(), true, 1));
             network.Structure.FinalizeStructure();
             network.Reset();
             return network;
