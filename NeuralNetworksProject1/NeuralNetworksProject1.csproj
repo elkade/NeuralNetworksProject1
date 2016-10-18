@@ -54,6 +54,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <None Include="ClassificationScript.R">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="DataSets\data.test.csv">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -67,7 +70,7 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="packages.config" />
-    <None Include="PlotScript.R">
+    <None Include="RegressionScript.R">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
