@@ -43,7 +43,7 @@ namespace NeuralNetworksProject1
 
             //Test(trainingData, network);
 
-            Visualize(testData, network, @"DataSets/data.xsq.output.csv", @"DataSets/data.xsq.train.csv");
+            VisualizeRegression(testData, network, @"DataSets/data.xsq.output.csv", @"DataSets/data.xsq.train.csv");
         }
 
         private static void DoClassification()
@@ -60,9 +60,37 @@ namespace NeuralNetworksProject1
             Train(training, testData, network);
 
             Test(trainingData, network);
-        }
 
-        private static void Visualize(IMLDataSet normalizedData, BasicNetwork network, string outputPath, string inputPath)
+            VisualizeClassification(testData, network, @"DataSets/data.output.csv", @"DataSets/data.train.csv");
+        }
+        private static void VisualizeClassification(IMLDataSet normalizedData, BasicNetwork network, string outputPath, string inputPath)
+        {
+            var csv = new StringBuilder();
+            csv.AppendLine("x,y,cls");
+            foreach (var row in normalizedData)
+            {
+                var sb = new StringBuilder();
+
+                IMLData output = network.Compute(row.Input);
+
+                var result = Math.Round(_normalizer.Denormalize(output[0]));
+                if (result < 1) result = 1;
+                else if (result > 3) result = 3;
+                StringBuilder rowBuilder = new StringBuilder();
+
+                for (int i = 0; i < row.Input.Count; i++)
+                {
+                    rowBuilder.Append(_normalizer.Denormalize(row.Input[i]).ToString(CultureInfo.GetCultureInfo("en-GB")));
+                    rowBuilder.Append(",");
+                }
+                rowBuilder.Append(result.ToString(CultureInfo.GetCultureInfo("en-GB")));
+                csv.AppendLine(rowBuilder.ToString());
+
+            }
+            File.WriteAllText(outputPath, csv.ToString());
+            RScriptRunner.RunFromCmd("ClassificationScript.R", "RScript.exe", outputPath, inputPath);
+        }
+        private static void VisualizeRegression(IMLDataSet normalizedData, BasicNetwork network, string outputPath, string inputPath)
         {
             var csv = new StringBuilder();
             foreach (var row in normalizedData)
@@ -85,7 +113,7 @@ namespace NeuralNetworksProject1
 
             }
             File.WriteAllText(outputPath, csv.ToString());
-            RScriptRunner.RunFromCmd("PlotScript.R", "C:\\Program Files\\R\\R-3.3.0\\bin\\RScript.exe", outputPath, inputPath);
+            RScriptRunner.RunFromCmd("RegressionScript.R", "C:\\Program Files\\R\\R-3.3.0\\bin\\RScript.exe", outputPath, inputPath);
         }
 
         private static IMLDataSet GetTestDataSet(string path, int rowLength)
@@ -134,7 +162,7 @@ namespace NeuralNetworksProject1
                 if ((epoch & 16) > 0) CalculateError(testData, network);
                 Console.WriteLine(@"Epoch #" + epoch + @" Error:" + training.Error);
                 epoch++;
-            } while (training.Error > 0.002 && epoch < maxEpochCount);
+            } while (training.Error > 0.018 && epoch < maxEpochCount);
 
             training.FinishTraining();
         }
@@ -168,9 +196,8 @@ namespace NeuralNetworksProject1
         {
             var network = new BasicNetwork();
             network.AddLayer(new BasicLayer(null, true, inputSize));
-            network.AddLayer(new BasicLayer(new ActivationSigmoid(), true, 30));
-            network.AddLayer(new BasicLayer(new ActivationSigmoid(), false, 20));
-            network.AddLayer(new BasicLayer(new ActivationSigmoid(), true, 1));
+            network.AddLayer(new BasicLayer(new ActivationTANH(), true, 6));
+            network.AddLayer(new BasicLayer(new ActivationTANH(), true, 1));
             network.Structure.FinalizeStructure();
             network.Reset();
             return network;
