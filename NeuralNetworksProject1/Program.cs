@@ -19,10 +19,11 @@ namespace NeuralNetworksProject1
     class Program
     {
         private static NormalizationHelper _normalizer;
+        private static readonly int maxEpochCount = 1000;
 
         static void Main(string[] args)
         {
-            //DoClassification();
+            DoClassification();
             DoRegression();
         }
 
@@ -35,10 +36,10 @@ namespace NeuralNetworksProject1
             var network = CreateNetwork(rowLength - 1);
 
             IMLTrain training = new Backpropagation(network, trainingData);
-
-            Train(training);
-
             var testData = GetTestDataSet(@"DataSets/data.xsq.test.csv", rowLength - 1);
+
+            Train(training, testData, network);
+
 
             //Test(trainingData, network);
 
@@ -54,10 +55,9 @@ namespace NeuralNetworksProject1
             var network = CreateNetwork(rowLength - 1);
 
             IMLTrain training = new Backpropagation(network, trainingData);
-
-            Train(training);
-
             var testData = GetTestDataSet(@"DataSets/data.test.csv", rowLength - 1);
+
+            Train(training, testData, network);
 
             Test(trainingData, network);
         }
@@ -85,7 +85,7 @@ namespace NeuralNetworksProject1
 
             }
             File.WriteAllText(outputPath, csv.ToString());
-            RScriptRunner.RunFromCmd("PlotScript.R", "RScript.exe", outputPath, inputPath);
+            RScriptRunner.RunFromCmd("PlotScript.R", "C:\\Program Files\\R\\R-3.3.0\\bin\\RScript.exe", outputPath, inputPath);
         }
 
         private static IMLDataSet GetTestDataSet(string path, int rowLength)
@@ -125,17 +125,43 @@ namespace NeuralNetworksProject1
             }
         }
 
-        private static void Train(IMLTrain training)
+        private static void Train(IMLTrain training, IMLDataSet testData, BasicNetwork network)
         {
             int epoch = 1;
             do
             {
                 training.Iteration();
+                if ((epoch & 16) > 0) CalculateError(testData, network);
                 Console.WriteLine(@"Epoch #" + epoch + @" Error:" + training.Error);
                 epoch++;
-            } while (training.Error > 0.002);
+            } while (training.Error > 0.002 && epoch < maxEpochCount);
 
             training.FinishTraining();
+        }
+
+        private static double CalculateError(IMLDataSet normalizedData, BasicNetwork network)
+        {
+            return 0;
+            foreach (var row in normalizedData)
+            {
+                var sb = new StringBuilder();
+
+                IMLData output = network.Compute(row.Input);
+
+                var result = _normalizer.Denormalize(output[0]);
+
+                sb.Append(" -> predicted: ");
+                sb.Append(result);
+
+                if (row.Ideal.Count > 0)
+                {
+                    var correct = _normalizer.Denormalize(row.Ideal[0]);
+                    sb.Append("(correct: ");
+                    sb.Append(correct);
+                    sb.Append(")");
+                }
+                Console.WriteLine(sb.ToString());
+            }
         }
 
         private static BasicNetwork CreateNetwork(int inputSize)
