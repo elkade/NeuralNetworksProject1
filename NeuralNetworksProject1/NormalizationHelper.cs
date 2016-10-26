@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 
 namespace NeuralNetworksProject1
 {
@@ -14,8 +15,8 @@ namespace NeuralNetworksProject1
             double max = data.Select(d => d.Max()).Max();
             double min = data.Select(d => d.Min()).Min();
 
-            _scale = max > -min ? max : -min;//max - min;
-            _transition = 0;//min;
+            _scale = (max - min);
+            _transition = min;
         }
         public double Normalize(double value)
         {

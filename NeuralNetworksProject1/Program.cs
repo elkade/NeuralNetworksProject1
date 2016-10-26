@@ -19,7 +19,7 @@ namespace NeuralNetworksProject1
     class Program
     {
         private static NormalizationHelper _normalizer;
-
+        private static ClassificationOutputNormalizer _con;
         static void Main(string[] args)
         {
             DoClassification();
@@ -32,7 +32,7 @@ namespace NeuralNetworksProject1
 
             var trainingData = GetTrainingDataSet(@"DataSets/data.xsq.train.csv", rowLength);
 
-            var network = CreateNetwork(rowLength - 1);
+            var network = CreateNetwork(rowLength - 1, 1);
 
             IMLTrain training = new Backpropagation(network, trainingData);
 
@@ -48,10 +48,10 @@ namespace NeuralNetworksProject1
         private static void DoClassification()
         {
             int rowLength = 3;
+            int outputSize = 3;
+            var trainingData = GetClassificationTrainingDataSet(@"DataSets/data.train.csv", rowLength, outputSize);
 
-            var trainingData = GetTrainingDataSet(@"DataSets/data.train.csv", rowLength);
-
-            var network = CreateNetwork(rowLength - 1);
+            var network = CreateNetwork(rowLength - 1, 3);
 
             IMLTrain training = new Backpropagation(network, trainingData);
 
@@ -59,7 +59,7 @@ namespace NeuralNetworksProject1
 
             var testData = GetTestDataSet(@"DataSets/data.test.csv", rowLength - 1);
 
-            Test(trainingData, network);
+            //Test(trainingData, network);
 
             VisualizeClassification(testData, network, @"DataSets/data.output.csv", @"DataSets/data.train.csv");
         }
@@ -73,9 +73,8 @@ namespace NeuralNetworksProject1
 
                 IMLData output = network.Compute(row.Input);
 
-                var result = Math.Round(_normalizer.Denormalize(output[0]));
-                if (result < 1) result = 1;
-                else if (result > 3) result = 3;
+                var result = _con.Denormalize(output);
+
                 StringBuilder rowBuilder = new StringBuilder();
 
                 for (int i = 0; i < row.Input.Count; i++)
@@ -116,17 +115,17 @@ namespace NeuralNetworksProject1
             RScriptRunner.RunFromCmd("RegressionScript.R", "RScript.exe", outputPath, inputPath);
         }
 
-        private static IMLDataSet GetTestDataSet(string path, int rowLength)
+        private static IMLDataSet GetTestDataSet(string path, int inputLength)
         {
             double[][] data;
             var format = new CSVFormat('.', ',');
             var csv = new ReadCSV(path, true, format);
-            data = GetData(csv, rowLength).ToArray();
+            data = GetData(csv, inputLength).ToArray();
             csv.Close();
 
             data = data.Select(d1 => d1.Select(d2 => _normalizer.Normalize(d2)).ToArray()).ToArray();
 
-            return new BasicMLDataSet(data, data.Select(d=>new double[0]).ToArray()) ;
+            return new BasicMLDataSet(data, data.Select(d => new double[0]).ToArray());
         }
 
         private static void Test(IMLDataSet normalizedData, BasicNetwork network)
@@ -161,17 +160,18 @@ namespace NeuralNetworksProject1
                 training.Iteration();
                 Console.WriteLine(@"Epoch #" + epoch + @" Error:" + training.Error);
                 epoch++;
-            } while (training.Error > 0.018);
+            } while (training.Error > 0.0019 && epoch < 10000);
 
             training.FinishTraining();
         }
 
-        private static BasicNetwork CreateNetwork(int inputSize)
+        private static BasicNetwork CreateNetwork(int inputSize, int outputSize)
         {
             var network = new BasicNetwork();
             network.AddLayer(new BasicLayer(null, true, inputSize));
-            network.AddLayer(new BasicLayer(new ActivationTANH(), true, 6));
-            network.AddLayer(new BasicLayer(new ActivationTANH(), true, 1));
+            network.AddLayer(new BasicLayer(new ActivationSigmoid(), true, 6));
+            network.AddLayer(new BasicLayer(new ActivationSigmoid(), true, 6));
+            network.AddLayer(new BasicLayer(new ActivationSigmoid(), true, outputSize));
             network.Structure.FinalizeStructure();
             network.Reset();
             return network;
@@ -204,6 +204,23 @@ namespace NeuralNetworksProject1
 
             double[][] input = data.Select(d => d.Take(rowLength - 1).ToArray()).ToArray();
             double[][] output = data.Select(d => d.Skip(rowLength - 1).ToArray()).ToArray();
+
+            return new BasicMLDataSet(input, output);
+        }
+        private static IMLDataSet GetClassificationTrainingDataSet(string path, int rowLength, int outputSize)
+        {
+            double[][] data;
+            var format = new CSVFormat('.', ',');
+            var csv = new ReadCSV(path, true, format);
+            data = GetData(csv, rowLength).ToArray();
+            csv.Close();
+
+            _normalizer = new NormalizationHelper(data);
+
+            _con = new ClassificationOutputNormalizer(outputSize);
+
+            double[][] input = data.Select(d1 => d1.Take(rowLength - 1).Select(d2 => _normalizer.Normalize(d2)).ToArray()).ToArray();
+            double[][] output = data.Select(d =>_con.Normalize(d.Skip(rowLength - 1).First())).ToArray();
 
             return new BasicMLDataSet(input, output);
         }
