@@ -38,12 +38,24 @@ namespace NeuralNetworksProject1
             IMLTrain training = new Backpropagation(network, trainingData);
             var testData = GetTestDataSet(@"DataSets/data.xsq.test.csv", rowLength - 1);
 
-            Train(training, testData, network);
+            var errors=Train(training, testData, network);
 
 
             //Test(trainingData, network);
 
             VisualizeRegression(testData, network, @"DataSets/data.xsq.output.csv", @"DataSets/data.xsq.train.csv");
+            VisualizeError(errors, @"DataSets/regression_errors.csv");
+        }
+
+        private static void VisualizeError(List<double> errors, string outputPath)
+        {
+            var csv = new StringBuilder();
+            for (int i=0; i<errors.Count; i++)
+            {
+                csv.Append(i + ";" + errors[i].ToString(CultureInfo.GetCultureInfo("en-GB"))+'\n');
+            }
+      
+            File.WriteAllText(outputPath, csv.ToString());
         }
 
         private static void DoClassification()
@@ -57,11 +69,12 @@ namespace NeuralNetworksProject1
             IMLTrain training = new Backpropagation(network, trainingData);
             var testData = GetTestDataSet(@"DataSets/data.test.csv", rowLength - 1);
 
-            Train(training, testData, network);
+            var errors = Train(training, testData, network);
 
             Test(trainingData, network);
 
             VisualizeClassification(testData, network, @"DataSets/data.output.csv", @"DataSets/data.train.csv");
+            VisualizeError(errors, @"DataSets/classification_errors.csv");
         }
         private static void VisualizeClassification(IMLDataSet normalizedData, BasicNetwork network, string outputPath, string inputPath)
         {
@@ -88,7 +101,7 @@ namespace NeuralNetworksProject1
 
             }
             File.WriteAllText(outputPath, csv.ToString());
-            RScriptRunner.RunFromCmd("ClassificationScript.R", "RScript.exe", outputPath, inputPath);
+            RScriptRunner.RunFromCmd("ClassificationScript.R", "C:\\Program Files\\R\\R-3.3.0\\bin\\RScript.exe", outputPath, inputPath);
         }
         private static void VisualizeRegression(IMLDataSet normalizedData, BasicNetwork network, string outputPath, string inputPath)
         {
@@ -153,21 +166,24 @@ namespace NeuralNetworksProject1
             }
         }
 
-        private static void Train(IMLTrain training, IMLDataSet testData, BasicNetwork network)
+        private static List<double> Train(IMLTrain training, IMLDataSet testData, BasicNetwork network)
         {
             int epoch = 1;
+            var errors = new List<double>();
             do
             {
                 training.Iteration();
-                if ((epoch & 16) > 0) CalculateError(testData, network);
+                //if ((epoch & 16) > 0) CalculateError(testData, network);
                 Console.WriteLine(@"Epoch #" + epoch + @" Error:" + training.Error);
+                errors.Add(training.Error);
                 epoch++;
             } while (training.Error > 0.018 && epoch < maxEpochCount);
 
             training.FinishTraining();
+            return errors;
         }
 
-        private static double CalculateError(IMLDataSet normalizedData, BasicNetwork network)
+        /*private static double CalculateError(IMLDataSet normalizedData, BasicNetwork network)
         {
             return 0;
             foreach (var row in normalizedData)
@@ -190,7 +206,7 @@ namespace NeuralNetworksProject1
                 }
                 Console.WriteLine(sb.ToString());
             }
-        }
+        }*/
 
         private static BasicNetwork CreateNetwork(int inputSize)
         {

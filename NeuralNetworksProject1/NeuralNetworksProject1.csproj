@@ -70,6 +70,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="packages.config" />
+    <None Include="ErrorScript.R">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="RegressionScript.R">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
