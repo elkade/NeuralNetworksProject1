@@ -23,7 +23,7 @@ namespace NeuralNetworksProject1
         static void Main(string[] args)
         {
             DoClassification();
-            //DoRegression();
+            DoRegression();
         }
 
         private static void DoRegression()
