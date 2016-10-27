@@ -1,11 +1,10 @@
-args = commandArgs(trailingOnly = TRUE)
+output_path <- "classification_errors.csv"
 
-# test if there is at least one argument: if not, return an error
-if (length(args) == 0) {
-	stop("At least one argument must be supplied (input file).n", call. = FALSE)
-}
-output_path <- args[1]
+output <- read.csv(file = output_path, header = FALSE, sep = ";")
 
-output <- read.csv(file = output_path, header = FALSE, sep = ",")
+plot(output, col = "red", cex = .2)
+output_path <- "regression_errors.csv"
 
-plot(input, type = "p", col = "black", cex = .2)
+output <- read.csv(file = output_path, header = FALSE, sep = ";")
+
+plot(output, col = "red", cex = .2)
